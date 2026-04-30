@@ -1,6 +1,7 @@
 # Farmer AI Assistant (Continued Pretraining)
 
 这是一个在基座模型上基于农业语料继续预训练后得到的本地模型服务示例，目标是提供农业场景问答与建议。
+Agricultural_Fine_tuning-LLM为微调后的模型权重
 
 ## Project Highlights
 
@@ -71,7 +72,7 @@ Request JSON:
 
 ## Upload to GitHub
 
-模型权重文件较大，本研究为大约3.44GB，请使用 Git LFS：
+模型权重文件较大，请使用 Git LFS：
 
 ```bash
 git lfs install
@@ -86,6 +87,12 @@ git commit -m "Add farmer AI assistant with strict hidden system"
 ```bash
 git push origin <your-branch>
 ```
+
+## Agricultural_Fine_tuning-LLM
+
+本研究微调后的模型权重较大，超过github限制的2GB，如需完整权重文件，请发送邮箱至
+zhao_myc1@163.com
+
 
 ## Reproducibility Notes
 
