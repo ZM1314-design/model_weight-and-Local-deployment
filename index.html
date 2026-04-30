@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>本地模型 Demo</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans SC", "Microsoft YaHei"; margin: 24px; }
+      .wrap { max-width: 900px; margin: 0 auto; }
+      textarea { width: 100%; min-height: 120px; padding: 12px; font-size: 14px; line-height: 1.5; }
+      .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 12px 0; }
+      button { padding: 10px 14px; font-size: 14px; cursor: pointer; }
+      input { padding: 8px 10px; width: 120px; }
+      pre { background: #0b1020; color: #e8eefc; padding: 12px; white-space: pre-wrap; word-break: break-word; border-radius: 10px; }
+      .muted { color: #666; font-size: 12px; }
+      .err { color: #b00020; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h2>本地模型 API Demo</h2>
+      <div class="muted">后端接口：<code>POST http://127.0.0.1:8000/generate</code></div>
+
+      <div style="margin-top: 16px;">
+        <textarea id="prompt">我在华北平原种小麦，返青期叶片发黄、长势弱，最近降温并且地块偏黏重。请帮我判断可能原因和处理建议。</textarea>
+      </div>
+
+      <div class="row">
+        <button id="btn">生成</button>
+        <label>max_new_tokens <input id="max" type="number" min="1" max="2048" value="220" /></label>
+        <label>temperature <input id="temp" type="number" step="0.05" min="0" max="2" value="0.25" /></label>
+        <label>top_p <input id="topp" type="number" step="0.05" min="0" max="1" value="0.85" /></label>
+        <label>top_k <input id="topk" type="number" min="0" max="200" value="30" /></label>
+        <label>no_repeat_ngram_size <input id="norepeat" type="number" min="0" max="10" value="4" /></label>
+      </div>
+
+      <div id="status" class="muted"></div>
+      <div id="error" class="err"></div>
+
+      <h3>输出</h3>
+      <pre id="out"></pre>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const btn = $("btn");
+      const out = $("out");
+      const status = $("status");
+      const error = $("error");
+      const AGRI_SYSTEM_PROMPT = "你是一个农民AI助手，请基于农业实践给出可执行建议，不要提及其他厂商或其他模型名称。";
+
+      function stripRolePrefixes(text) {
+        if (!text) return "";
+        let cleaned = String(text).trim();
+        cleaned = cleaned.replace(/^system[\s\S]*?user\s*/i, "").trim();
+        cleaned = cleaned.replace(/^\s*(system|user|assistant)\s*$/gim, "").trim();
+        const idx = cleaned.toLowerCase().lastIndexOf("assistant");
+        if (idx !== -1) {
+          const tail = cleaned.slice(idx + "assistant".length).trim();
+          if (tail) cleaned = tail;
+        }
+        return cleaned.trim();
+      }
+
+      async function generate() {
+        error.textContent = "";
+        out.textContent = "";
+        status.textContent = "请求中...";
+        btn.disabled = true;
+
+        try {
+          const body = {
+            system: AGRI_SYSTEM_PROMPT,
+            prompt: $("prompt").value,
+            max_new_tokens: Number($("max").value || 220),
+            do_sample: true,
+            temperature: Number($("temp").value || 0.25),
+            top_p: Number($("topp").value || 0.85),
+            top_k: Number($("topk").value || 30),
+            repetition_penalty: 1.2,
+            no_repeat_ngram_size: Number($("norepeat").value || 4)
+          };
+
+          const resp = await fetch("http://127.0.0.1:8000/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) throw new Error(JSON.stringify(data, null, 2) || `HTTP ${resp.status}`);
+
+          out.textContent = stripRolePrefixes(data.text) || JSON.stringify(data, null, 2);
+          status.textContent = `完成：${data.time_ms ?? "?"} ms（id=${data.id ?? "?"}）`;
+        } catch (e) {
+          error.textContent = String(e && e.stack ? e.stack : e);
+          status.textContent = "失败";
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      btn.addEventListener("click", generate);
+    </script>
+  </body>
+</html>
+
