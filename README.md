@@ -1,6 +1,7 @@
 # Farmer AI Assistant (Continued Pretraining)
 
 这是一个在基座模型上基于农业语料继续预训练后得到的本地模型服务示例，目标是提供农业场景问答与建议。
+本项目包含预训练权重于微调权重。
 
 ## Project Highlights
 
